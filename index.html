@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatGPT & Clawed :3</title>
+    <style>
+        :root { --bg: #202123; --sidebar: #2c2d30; --user-msg: #444654; --cat-msg: #10a37f; --clawed-msg: #a31010; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; }
+        
+        /* Sidebar Styles */
+        #sidebar { width: 260px; background: var(--sidebar); display: flex; flex-direction: column; padding: 10px; border-right: 1px solid #4d4d4f; }
+        .nav-btn { padding: 12px; margin-bottom: 5px; background: transparent; border: 1px solid #565869; border-radius: 5px; color: white; cursor: pointer; text-align: left; transition: 0.2s; }
+        .nav-btn:hover { background: #3e3f4b; }
+        .active-chat { background: #3e3f4b; border-color: #fff; }
+
+        /* Main Chat Area */
+        #main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        #header { padding: 15px; background: #343541; display: flex; justify-content: center; gap: 20px; border-bottom: 1px solid #4d4d4f; }
+        .persona-btn { padding: 8px 15px; border-radius: 20px; border: 2px solid transparent; cursor: pointer; font-weight: bold; }
+        .cat-btn { background: var(--cat-msg); color: white; }
+        .claw-btn { background: var(--clawed-msg); color: white; }
+        .selected-p { border-color: white; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 15px; border-radius: 10px; max-width: 85%; line-height: 1.5; }
+        .user { background: var(--user-msg); align-self: flex-end; }
+        .cat { background: var(--cat-msg); align-self: flex-start; }
+        .clawed { background: var(--clawed-msg); align-self: flex-start; }
+
+        .input-container { padding: 20px; background: linear-gradient(transparent, var(--bg)); }
+        .input-box { background: #40414f; padding: 15px; border-radius: 10px; display: flex; gap: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+        input { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <button class="nav-btn" onclick="createNewChat()">+ New Chat</button>
+        <div id="chat-list" style="margin-top: 20px; display: flex; flex-direction: column; gap: 5px;"></div>
+    </div>
+
+    <div id="main">
+        <div id="header">
+            <button id="catBtn" class="persona-btn cat-btn selected-p" onclick="setPersona('cat')">CatGPT 🐱</button>
+            <button id="clawBtn" class="persona-btn claw-btn" onclick="setPersona('clawed')">Clawed 😼</button>
+        </div>
+
+        <div id="chat-window"></div>
+
+        <div class="input-container">
+            <div class="input-box">
+                <input type="text" id="userInput" placeholder="Send a message..." onkeydown="if(event.key==='Enter') send()">
+                <button onclick="send()" style="background:none; border:none; color:#10a37f; cursor:pointer; font-weight:bold;">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPersona = 'cat';
+        let chats = [{ id: Date.now(), title: "First Meow", messages: [] }];
+        let activeChatId = chats[0].id;
+
+        const vocab = {
+            cat: ["Meow", "mrrp", "MEOW!", "purr", ":3", "nya~", "rawr"],
+            clawed: ["Hiss!", "*scratches*", "Stare...", "No.", "Human, please.", "Bite.", "Ugh."]
+        };
+
+        function setPersona(p) {
+            currentPersona = p;
+            document.getElementById('catBtn').classList.toggle('selected-p', p === 'cat');
+            document.getElementById('clawBtn').classList.toggle('selected-p', p === 'clawed');
+        }
+
+        function createNewChat() {
+            const newChat = { id: Date.now(), title: "New Conversation", messages: [] };
+            chats.push(newChat);
+            switchChat(newChat.id);
+        }
+
+        function switchChat(id) {
+            activeChatId = id;
+            renderList();
+            renderMessages();
+        }
+
+        function renderList() {
+            const list = document.getElementById('chat-list');
+            list.innerHTML = chats.map(c => `
+                <button class="nav-btn ${c.id === activeChatId ? 'active-chat' : ''}" onclick="switchChat(${c.id})">
+                    💬 ${c.title}
+                </button>
+            `).join('');
+        }
+
+        function renderMessages() {
+            const win = document.getElementById('chat-window');
+            const activeChat = chats.find(c => c.id === activeChatId);
+            win.innerHTML = activeChat.messages.map(m => `
+                <div class="msg ${m.role}">${m.text}</div>
+            `).join('');
+            win.scrollTop = win.scrollHeight;
+        }
+
+        function send() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const activeChat = chats.find(c => c.id === activeChatId);
+            
+            // Add User Msg
+            activeChat.messages.push({ role: 'user', text: text });
+            if(activeChat.title === "New Conversation") activeChat.title = text.substring(0, 15) + "...";
+            
+            input.value = "";
+            renderMessages();
+            renderList();
+
+            // Generate AI Response
+            setTimeout(() => {
+                let response = "";
+                let len = Math.floor(Math.random() * 6) + 1;
+                for(let i=0; i<len; i++) {
+                    response += vocab[currentPersona][Math.floor(Math.random() * vocab[currentPersona].length)] + " ";
+                }
+                activeChat.messages.push({ role: currentPersona, text: response.trim() });
+                renderMessages();
+            }, 600);
+        }
+
+        // Initial render
+        renderList();
+    </script>
+</body>
+</html>
